@@ -1,0 +1,7 @@
+= PHP_SermepaPaymentGateway
+
+Basic support for the Spanish SERMEPA Virtual POS payment gateway provided by Servired.
+Used by many banks in Spain and known locally as a "TPV Virtual".
+
+
+
