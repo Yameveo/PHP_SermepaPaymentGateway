@@ -1,6 +1,6 @@
 <?php
 /*
-	Licensed to the Apache Software Foundation (ASF) under one
+    Licensed to the Apache Software Foundation (ASF) under one
 	or more contributor license agreements.  See the NOTICE file
 	distributed with this work for additional information
 	regarding copyright ownership.  The ASF licenses this file
@@ -20,65 +20,24 @@
 	File:		SermepaPaymentGatewayCallBack.php (SERMEPA)
 	Function:	Create a valid form and hash for SERMEPA Gateway
 	Author:		Jordi Martín
-	Date:		16/04/2012
-	Version:	Alpha (not tested)
+	Date:		16/08/2012
+	Version:	1.0
 */
-include('SermepaPaymentGateway.php');
-//only post is allowed
-if (!empty($_POST)) {
-    if (DEBUG) {
-        $log = fopen("log.txt", "a");
-        fwrite($log, "=====================================================\n");
-    }
-    // get from post
-    $total            = $_POST["Ds_Amount"];
-    $order            = $_POST["Ds_Order"];
-    $code             = $_POST["Ds_MerchantCode"];
-    $currency         = $_POST["Ds_Currency"];
-    $response         = $_POST["Ds_Response"];
-    $remote_signature = $_POST["Ds_Signature"];
-    
-    
-    $pv      = new PassarelaVisa();
-    $isValid = $pv->isValidMessage($total, $order, $code, $currency, $response, $remote_signature);
-    
-    // Calcul del SHA1
-    if ($isValid) {
-        $total    = number_format($total / 100, 2);
-        $order    = (int) intval($order);
-        $response = intval($response);
-        
-        if ($response < 101) {
-            //ALL OK
-            //put your code here
-            
-            if (DEBUG) {
-                fwrite($log, "Order:" . $order . " Total:" . $total . " Responce: " . $response . " Status: OK\n");
-            }
-        } else {
-            //something wrong
-            if (DEBUG) {
-                fwrite($log, "Order:" . $order . " Total:" . $total . " Responce: " . $response . " Status: Fail\n");
-            }
-        }
-        
-    } else {
-        if (DEBUG) {
-            fwrite($log, "Order:" . $order . " Total:" . $total . " Responce: " . $response . " Status: Signature mistmach\n");
-            fwrite($log, "\tPOST VALUES:\n");
-            foreach ($_POST as $key => $value) {
-                fwrite($log, "\tKey:" . $key . " Value:" . $value . "\n");
-            }
-            fwrite($log, "\tLocal signature:" . $firma_local . "\n");
-        }
-    }
-} else {
-    if (DEBUG) {
-        fwrite($log, "No request post\n");
-    }
-    header("Status: 404 Not Found");
-}
-if (DEBUG) {
-    fclose($log);
+class SermepaPaymentGatewayCallBack
+{
+	
+	var $secret   	=  'bdad275550a260666df4';
+	
+	function isValidMessage($total,$order,$code,$currency,$response,$remote_signature ){
+		$message     = $total . $order . $code . $currency . $response . $this->secret;
+		
+		$local_signature = sha1($message);
+		return (strcasecmp($local_signature,$remote_signature)==0);
+	}
+	
+	function isValidResponse($response){
+		return ($response < 101);
+	}
+	 
 }
 ?>

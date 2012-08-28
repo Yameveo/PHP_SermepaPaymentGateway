@@ -20,11 +20,11 @@
 	File:		SermepaPaymentGateway.php (SERMEPA)
 	Function:	Create a valid form and hash for SERMEPA Gateway
 	Author:		Jordi Martín
-	Date:		16/04/2012
-	Version:	Alpha (not tested)
+	Date:		16/08/2012
+	Version:	1.0
 */
-define('DEBUG', 1);
-if (DEBUG) {
+define('DEBUG_TPV', 0);
+if (DEBUG_TPV) {
     error_reporting(E_ALL);
     ini_set('display_errors','On');
 }
@@ -111,10 +111,10 @@ class SermepaPaymentGateway
         { 
             throw new SermepaPaymentGatewayException('ConsumerLanguage is a mandatory param');
         } 
-        if (!isset($this->urlMerchant))
-        { 
-            throw new SermepaPaymentGatewayException('UrlMerchant is a mandatory param');
-        } 
+        //if (!isset($this->urlMerchant))
+        //{ 
+        //    throw new SermepaPaymentGatewayException('UrlMerchant is a mandatory param');
+        //} 
         
     }
     
@@ -163,31 +163,31 @@ class SermepaPaymentGateway
 	$info .= "		<td><h2>Info debug.</h2></td>";
 	$info .= "	</tr>";
 	$info .= "	<tr>";
-	$info .= "		<td>URL: <b>$this->url_tpvv</b></td>";
+	$info .= "		<td>URL: <font color=blue>$this->url_tpvv</font></td>";
 	$info .= "	</tr>";
 	$info .= "	<tr>";
-	$info .= "		<td>Comercio: <b>$this->name</b></td>";
+	$info .= "		<td>Comercio: <font color=blue>$this->name</font></td>";
 	$info .= "	</tr>";
 	$info .= "	<tr>";
-	$info .= "		<td>FUC: <b>$this->code</b></td>";
+	$info .= "		<td>FUC: <font color=blue>$this->code</font></td>";
 	$info .= "	</tr>";
 	$info .= "	<tr>";
-	$info .= "		<td>Terminal: <b>$this->terminal</b></td>";
+	$info .= "		<td>Terminal: <font color=blue>$this->terminal</font></td>";
 	$info .= "	</tr>";
 	$info .= "	<tr>";
-	$info .= "		<td>Pedido: <b>$order</b></td>";
+	$info .= "		<td>Pedido: <font color=blue>$order</font></td>";
 	$info .= "	</tr>";
 	$info .= "	<tr>";
-	$info .= "		<td>Importe: <b>$amount</b></td>";
+	$info .= "		<td>Importe: <font color=blue>$amount</font></td>";
 	$info .= "	</tr>";
 	$info .= "	<tr>";
-	$info .= "		<td>Tipo de Operacion: <b>$this->transactionType (Autorización)</b></td>";
+	$info .= "		<td>Tipo de Operacion: <font color=blue>$this->transactionType (Autorización)</font></td>";
 	$info .= "	</tr>";
 	$info .= "	<tr>";
-	$info .= "		<td>URL del comercio: <b>$this->urlMerchant</b></td>";
+	$info .= "		<td>URL del comercio: <font color=blue>$this->urlMerchant</font></td>";
 	$info .= "	</tr>";
 	$info .= "	<tr>";
-	$info .= "		<td>Moneda: <b>$this->currency Euros</b></td>";
+	$info .= "		<td>Moneda: <font color=blue>$this->currency Euros</font></td>";
 	$info .= "	</tr>";
 	$info .= "</table>";
 	$info .= "</pre>";
@@ -197,12 +197,12 @@ class SermepaPaymentGateway
     
     public function getForm($amount, $order,$show_button=true,$form_name='tpv_sermepa'){
         $form = '';
-        if (DEBUG) {
+        if (DEBUG_TPV) {
             $form .= $this->showDebugInfo($amount, $order);
         }
-        $order = str_pad($order, 7, "0", STR_PAD_LEFT);
+        //$order = str_pad($order, 7, "0", STR_PAD_LEFT);
         $amount = $this->numberNormalizer($amount);
-        $form .= '<form name="'.$form_name.'" action="' . $this->url_tpvv . '" method="post" target="tpv">';
+        $form .= '<form name="'.$form_name.'" id="'.$form_name.'" action="' . $this->url_tpvv . '" method="post">';
         $form .= '<input type="hidden" name="Ds_Merchant_Currency" value="' . $this->currency . '">';
         $form .= '<input type="hidden" name="Ds_Merchant_MerchantCode" value="' . $this->code . '">';
         $form .= '<input type="hidden" name="Ds_Merchant_MerchantName" value="' . $this->name . '">';
@@ -211,7 +211,7 @@ class SermepaPaymentGateway
         $form .= '<input type="hidden" name="Ds_Merchant_TransactionType" value="' . $this->transactionType . '">';
         $form .= '<input type="hidden" name="Ds_Merchant_Amount" value="' . $amount . '">';
         $form .= '<input type="hidden" name="Ds_Merchant_Order"  value="' . $order . '">';
-        $form .= '<input type="hidden" name="Ds_Merchant_MerchantURL" value="' . $this->urlMerchant . '">';
+        $form .= '<input type="hidden" name="Ds_Merchant_MerchantUrl" value="' . $this->urlMerchant . '">';
         
         if (!empty($this->merchantUrlOK)){
             $form .= '<input type="hidden" name="Ds_Merchant_UrlOK" value="' . $this->merchantUrlOK . '">';
@@ -234,10 +234,12 @@ class SermepaPaymentGateway
 
 
    public function isValidMessage($total,$order,$code,$currency,$response,$remote_signature ){
-    	$message     = $total . $order . $code . $currency . $response . $secret;
+   	$message     = $total . $order . $code . $currency . $response . $this->secret;
+    	
     	$local_signature = sha1($message);
-	return (strcmp($local_signature,$remote_signature)==0);
+	return (strcasecmp($local_signature,$remote_signature)==0);
     }
+    
     
     
 }
