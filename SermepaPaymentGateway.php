@@ -1,6 +1,6 @@
 <?
 /*
-    Licensed to the Apache Software Foundation (ASF) under one
+    	Licensed to the Apache Software Foundation (ASF) under one
 	or more contributor license agreements.  See the NOTICE file
 	distributed with this work for additional information
 	regarding copyright ownership.  The ASF licenses this file
@@ -39,7 +39,6 @@ class SermepaPaymentGateway
     private $name;
     private $terminal;
     private $currency;
-    private $transactionType;
     private $urlMerchant;
     private $consumerLanguage;
     private $merchantUrlOK;
@@ -66,8 +65,7 @@ class SermepaPaymentGateway
         $this->name            	= $config['name'];
         $this->terminal        	= $config['terminal'];
         $this->currency        	= $config['currency'];
-        $this->transactionType 	= $config['transactionType'];
-        $this->consumerLanguage =    $config['consumerLanguage'];
+        $this->consumerLanguage =       $config['consumerLanguage'];
         $this->urlMerchant     	= $config['urlMerchant'];
         
         
@@ -103,15 +101,16 @@ class SermepaPaymentGateway
         { 
             throw new SermepaPaymentGatewayException('Currency is a mandatory param');
         } 
-        if (!isset($this->transactionType))
-        { 
-            throw new SermepaPaymentGatewayException('TransactionType is a mandatory param');
-        }         
+        //if (!isset($this->transactionType))
+        //{ 
+        //    throw new SermepaPaymentGatewayException('TransactionType is a mandatory param');
+        //}         
         if (!isset($this->consumerLanguage))
         { 
             throw new SermepaPaymentGatewayException('ConsumerLanguage is a mandatory param');
         } 
-        //if (!isset($this->urlMerchant))
+        
+	//if (!isset($this->urlMerchant))
         //{ 
         //    throw new SermepaPaymentGatewayException('UrlMerchant is a mandatory param');
         //} 
@@ -196,6 +195,7 @@ class SermepaPaymentGateway
     
     
     public function getForm($amount, $order,$show_button=true,$form_name='tpv_sermepa'){
+	$transactionType="0";
         $form = '';
         if (DEBUG_TPV) {
             $form .= $this->showDebugInfo($amount, $order);
@@ -208,7 +208,7 @@ class SermepaPaymentGateway
         $form .= '<input type="hidden" name="Ds_Merchant_MerchantName" value="' . $this->name . '">';
         $form .= '<input type="hidden" name="Ds_Merchant_ConsumerLanguage" value="' . $this->consumerLanguage . '">';
         $form .= '<input type="hidden" name="Ds_Merchant_Terminal" value="' . $this->terminal . '">';
-        $form .= '<input type="hidden" name="Ds_Merchant_TransactionType" value="' . $this->transactionType . '">';
+        $form .= '<input type="hidden" name="Ds_Merchant_TransactionType" value="' . $transactionType . '">';
         $form .= '<input type="hidden" name="Ds_Merchant_Amount" value="' . $amount . '">';
         $form .= '<input type="hidden" name="Ds_Merchant_Order"  value="' . $order . '">';
         $form .= '<input type="hidden" name="Ds_Merchant_MerchantUrl" value="' . $this->urlMerchant . '">';
@@ -222,7 +222,7 @@ class SermepaPaymentGateway
         }
                    
         
-        $message   = $amount . $order . $this->code . $this->currency . $this->transactionType . $this->urlMerchant . $this->secret;
+        $message   = $amount . $order . $this->code . $this->currency . $transactionType . $this->urlMerchant . $this->secret;
         $signature = sha1($message);
         $form .= '<input type="hidden" name="Ds_Merchant_MerchantSignature" value="' . $signature . '">';
         if ($show_button) {
@@ -233,13 +233,61 @@ class SermepaPaymentGateway
     }
 
 
-   public function isValidMessage($total,$order,$code,$currency,$response,$remote_signature ){
-   	$message     = $total . $order . $code . $currency . $response . $this->secret;
-    	
-    	$local_signature = sha1($message);
-	return (strcasecmp($local_signature,$remote_signature)==0);
+ public function refund($paymentId,$amount ){
+
+  	$amount = $this->numberNormalizer($amount);
+	$transactionType="3";
+        $message   = $amount . $paymentId . $this->code . $this->currency . $transactionType . $this->secret;
+
+        $signature = sha1($message);
+
+	$fields = array(
+		'Ds_Merchant_Currency' => urlencode($this->currency),
+		'Ds_Merchant_MerchantCode' => urlencode($this->code),
+		'Ds_Merchant_Terminal' => urlencode($this->terminal),
+		'Ds_Merchant_TransactionType' => $transactionType,
+		'Ds_Merchant_Amount' => urlencode($amount),
+		'Ds_Merchant_Order' => urlencode($paymentId),
+		'Ds_Merchant_MerchantSignature' => $signature,
+		'Ds_Merchant_MerchantName' => $this->name,
+		'Ds_Merchant_ConsumerLanguage' => urlencode($this->consumerLanguage)
+	);
+
+
+
+	//url-ify the data for the POST
+	foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
+	rtrim($fields_string, '&');
+	
+	echo "\n";
+	echo $this->url_tpvv;
+	echo "\n";
+	echo $fields_string;
+	//open connection
+	$ch = curl_init();
+
+	//set the url, number of POST vars, POST data
+	curl_setopt($ch,CURLOPT_URL, $this->url_tpvv);
+	curl_setopt($ch,CURLOPT_POST, count($fields));
+	curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+	curl_setopt($ch,CURLOPT_BINARYTRANSFER,true);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+	//no, not is a joke :(
+	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+	curl_setopt($ch, CURLOPT_FRESH_CONNECT, 1);
+
+	//execute post
+	$result = curl_exec($ch);
+
+	//close connection
+	curl_close($ch);
+
+      
+       
+        return $result;
     }
-    
     
     
 }
