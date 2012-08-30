@@ -21,7 +21,7 @@ if (!empty($_POST)) {
     $remote_signature = $_POST["Ds_Signature"];
     
     
-    $spw = new SermepaPaymentGatewayCallBack();
+    $spw = new SermepaPaymentGatewayCallBack("SECRET");
     $isValid = $spw->isValidMessage($total, $order_tpv, $code, $currency, $response, $remote_signature);
     
     // Calcul del SHA1

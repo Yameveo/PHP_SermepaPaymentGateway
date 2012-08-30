@@ -26,7 +26,11 @@
 class SermepaPaymentGatewayCallBack
 {
 	
-	var $secret   	=  'bdad275550a260666df4';
+
+	function __construct($secret)
+    	{
+		$this->secret=$secret;
+    	}
 	
 	function isValidMessage($total,$order,$code,$currency,$response,$remote_signature ){
 		$message     = $total . $order . $code . $currency . $response . $this->secret;
